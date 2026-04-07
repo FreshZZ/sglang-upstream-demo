@@ -21,8 +21,12 @@ class Scheduler:
         if not self.queue:
             return None
 
-        # Step 2: Sort by arrival time (FIFO)
-        sorted_requests = sorted(self.queue, key=lambda r: r.arrival_time)
+        # Step 2: Sort by request phase (PREFILL before DECODE), then by arrival
+        # [UPSTREAM v1.2] Added prefill/decode phase separation
+        sorted_requests = sorted(
+            self.queue,
+            key=lambda r: (r.phase, r.arrival_time)
+        )
 
         # Step 3: Select up to batch_size requests
         batch_size = 32
@@ -34,7 +38,6 @@ class Scheduler:
             self.running.append(req)
 
         # Step 5: Return the batch with metrics tracking
-        # [UPSTREAM v1.1] Added metrics tracking
         self.metrics["batches_scheduled"] += 1
         self.metrics["total_requests"] += len(batch)
         return batch
@@ -43,6 +46,7 @@ class Scheduler:
 class Request:
     """A single inference request."""
 
-    def __init__(self, request_id, arrival_time):
+    def __init__(self, request_id, arrival_time, phase=0):
         self.request_id = request_id
         self.arrival_time = arrival_time
+        self.phase = phase  # 0 = PREFILL, 1 = DECODE
