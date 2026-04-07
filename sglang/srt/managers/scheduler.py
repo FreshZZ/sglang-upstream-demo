@@ -1,5 +1,7 @@
 """Scheduler for SGLang runtime."""
 
+import time
+
 
 class Scheduler:
     """Scheduler manages batch scheduling for inference requests."""
@@ -7,6 +9,7 @@ class Scheduler:
     def __init__(self):
         self.queue = []
         self.running = []
+        self.metrics = {"batches_scheduled": 0, "total_requests": 0}
 
     def get_next_batch_to_run(self):
         """Select the next batch of requests to run.
@@ -30,7 +33,10 @@ class Scheduler:
             self.queue.remove(req)
             self.running.append(req)
 
-        # Step 5: Return the batch
+        # Step 5: Return the batch with metrics tracking
+        # [UPSTREAM v1.1] Added metrics tracking
+        self.metrics["batches_scheduled"] += 1
+        self.metrics["total_requests"] += len(batch)
         return batch
 
 
